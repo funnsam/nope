@@ -1,36 +1,46 @@
 use std::io::{self, Read, Write};
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 
 #[derive(Parser)]
 struct Arg {
-    kind: String,
+    #[clap(value_enum)]
+    kind: Kind,
+}
+
+#[derive(ValueEnum, Clone)]
+enum Kind {
+    Normal,
+    RedGreen,
+    BlueYellow,
+    Monochrome,
 }
 
 type Color = (f32, f32, f32);
 
-fn color_matrix(kind: &str) -> Option<[Color; 3]> {
-    match kind {
-        "normal" => Some([
-            (1.0, 0.0, 0.0),
-            (0.0, 1.0, 0.0),
-            (0.0, 0.0, 1.0),
-        ]),
-        "red-green" => Some([
-            (0.625, 0.375, 0.0),
-            (0.7, 0.3, 0.0),
-            (0.0, 0.3, 0.7),
-        ]),
-        "blue-yellow" => Some([
-            (0.95, 0.5, 0.0),
-            (0.0, 0.433333, 0.56667),
-            (0.0, 0.475, 0.525),
-        ]),
-        "monochrome" => Some([
-            (0.299, 0.587, 0.114),
-            (0.299, 0.587, 0.114),
-            (0.299, 0.587, 0.114),
-        ]),
-        _ => None
+impl Kind {
+    fn get_matrix(&self) -> [Color; 3] {
+        match self {
+            Kind::Normal => [
+                (1.0, 0.0, 0.0),
+                (0.0, 1.0, 0.0),
+                (0.0, 0.0, 1.0),
+            ],
+            Kind::RedGreen => [
+                (0.625, 0.375, 0.0),
+                (0.7, 0.3, 0.0),
+                (0.0, 0.3, 0.7),
+            ],
+            Kind::BlueYellow => [
+                (0.95, 0.5, 0.0),
+                (0.0, 0.433333, 0.56667),
+                (0.0, 0.475, 0.525),
+            ],
+            Kind::Monochrome => [
+                (0.299, 0.587, 0.114),
+                (0.299, 0.587, 0.114),
+                (0.299, 0.587, 0.114),
+            ],
+        }
     }
 }
 
@@ -40,12 +50,12 @@ fn main() {
     let mut stdout = io::stdout();
     let mut buf = [0];
 
-    let recolor = color_matrix(&args.kind).expect("unknown type");
+    let recolor = args.kind.get_matrix();
 
     let mut default_colors = Vec::with_capacity(10);
     filter(true, get_8c(7, false), &recolor, &mut default_colors);
     filter(false, get_8c(0, false), &recolor, &mut default_colors);
-    write!(stdout, "\x1b[{}m", default_colors.iter().map(|a| a.to_string()).collect::<Vec<String>>().join(";")).unwrap();
+    write!(stdout, "\x1b[{}m\x1b[K", default_colors.iter().map(|a| a.to_string()).collect::<Vec<String>>().join(";")).unwrap();
 
     while let Ok(_) = stdin.read_exact(&mut buf) {
         if buf[0] == 0x1b {
@@ -55,6 +65,8 @@ fn main() {
                 if buf[0].is_ascii_alphabetic() {
                     k = buf[0];
                     break;
+                } else if buf[0] == b'\n' {
+                    write!(stdout, "\x1b[{}m\x1b[K", default_colors.iter().map(|a| a.to_string()).collect::<Vec<String>>().join(";")).unwrap();
                 } else {
                     a.push(buf[0]);
                 }
@@ -125,7 +137,7 @@ fn main() {
         }
     }
 
-    write!(stdout, "\x1b[0m").unwrap();
+    write!(stdout, "\x1b[0m\x1b[K").unwrap();
 }
 
 fn get_8c(color: u8, int: bool) -> Color {
