@@ -233,9 +233,9 @@ fn get_256c(color: u8) -> Color {
         16..=231 => {
             let color = color - 16;
             (
-                (color & 7) as f32 * 8.0,
-                ((color >> 3) & 7) as f32 * 8.0,
-                ((color >> 6) & 7) as f32 * 8.0,
+                ((color / 36) % 6) as f32 * 42.667,
+                ((color /  6) % 6) as f32 * 42.667,
+                ((color /  1) % 6) as f32 * 42.667,
             )
         },
         232..=255 => {
