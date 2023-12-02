@@ -45,6 +45,7 @@ enum Kind {
 type Color = (f32, f32, f32);
 
 impl Kind {
+    // http://web.archive.org/web/20081014161121/http://www.colorjack.com/labs/colormatrix/
     const fn get_matrix(&self) -> [Color; 3] {
         match self {
             Self::Normal => [
