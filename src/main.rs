@@ -1,3 +1,16 @@
+#![warn(
+    clippy::complexity,
+    clippy::correctness,
+    clippy::perf,
+    clippy::nursery,
+    clippy::suspicious,
+    clippy::style,
+)]
+#![allow(
+    clippy::semicolon_inside_block,
+    clippy::just_underscores_and_digits,
+)]
+
 use std::io::{self, Read, Write};
 use clap::{Parser, ValueEnum};
 
@@ -9,36 +22,75 @@ struct Arg {
 
 #[derive(ValueEnum, Clone)]
 enum Kind {
+    // Trichromatic
     Normal,
-    RedGreen,
-    BlueYellow,
-    Monochrome,
+    // Protanopia
+    RedBlind,
+    // Protanomaly
+    RedWeak,
+    // Deuteranopia
+    GreenBlind,
+    //Deuteranomaly
+    GreenWeak,
+    // Tritanopia
+    BlueBlind,
+    // Tritanomaly
+    BlueWeak,
+    // Achromatopsia
+    ColorBlind,
+    // Achromatomaly
+    ColorWeak,
 }
 
 type Color = (f32, f32, f32);
 
 impl Kind {
-    fn get_matrix(&self) -> [Color; 3] {
+    const fn get_matrix(&self) -> [Color; 3] {
         match self {
-            Kind::Normal => [
+            Self::Normal => [
                 (1.0, 0.0, 0.0),
                 (0.0, 1.0, 0.0),
                 (0.0, 0.0, 1.0),
             ],
-            Kind::RedGreen => [
+            Self::RedBlind => [
+                (0.56667, 0.43333, 0.0),
+                (0.55833, 0.44167, 0.0),
+                (0.0, 0.24167, 0.75833),
+            ],
+            Self::RedWeak => [
+                (0.81667, 0.18333, 0.0),
+                (0.33333, 0.66667, 0.0),
+                (0.0, 0.125, 0.875),
+            ],
+            Self::GreenBlind => [
                 (0.625, 0.375, 0.0),
                 (0.7, 0.3, 0.0),
                 (0.0, 0.3, 0.7),
             ],
-            Kind::BlueYellow => [
+            Self::GreenWeak => [
+                (0.8, 0.2, 0.0),
+                (0.25833, 0.47167, 0.0),
+                (0.0, 0.14167, 85.833),
+            ],
+            Self::BlueBlind => [
                 (0.95, 0.5, 0.0),
                 (0.0, 0.433333, 0.56667),
                 (0.0, 0.475, 0.525),
             ],
-            Kind::Monochrome => [
+            Self::BlueWeak => [
+                (0.96667, 0.03333, 0.0),
+                (0.0, 0.73333, 0.26667),
+                (0.0, 0.18333, 0.81667),
+            ],
+            Self::ColorBlind => [
                 (0.299, 0.587, 0.114),
                 (0.299, 0.587, 0.114),
                 (0.299, 0.587, 0.114),
+            ],
+            Self::ColorWeak => [
+                (0.618, 0.32, 0.062),
+                (0.163, 0.775, 0.062),
+                (0.163, 0.32, 0.516),
             ],
         }
     }
@@ -57,11 +109,11 @@ fn main() {
     filter(false, get_8c(0, false), &recolor, &mut default_colors);
     write!(stdout, "\x1b[{}m\x1b[K", default_colors.iter().map(|a| a.to_string()).collect::<Vec<String>>().join(";")).unwrap();
 
-    while let Ok(_) = stdin.read_exact(&mut buf) {
+    while stdin.read_exact(&mut buf).is_ok() {
         if buf[0] == 0x1b {
             let mut a = Vec::new();
             let mut k = 0;
-            while let Ok(_) = stdin.read_exact(&mut buf) {
+            while stdin.read_exact(&mut buf).is_ok() {
                 if buf[0].is_ascii_alphabetic() {
                     k = buf[0];
                     break;
@@ -73,7 +125,7 @@ fn main() {
             }
 
             let a = String::from_utf8(a).unwrap();
-            if k == 'm' as u8 {
+            if k == b'm' {
                 let a = a.replace('[', "");
                 let mut a = a.split(';').map(|a| a.parse());
                 let mut new = Vec::new();
@@ -133,7 +185,7 @@ fn main() {
                 write!(stdout, "\x1b{}{}", a, k as char).unwrap();
             }
         } else {
-            stdout.write(&buf).unwrap();
+            stdout.write_all(&buf).unwrap();
         }
     }
 
@@ -144,9 +196,9 @@ fn get_8c(color: u8, int: bool) -> Color {
     let color = color % 10;
     let base = if int { 255.0 - 192.0 } else { 0.0 };
     (
-        ((color >> 0) & 1) as f32 * 192.0 + base,
-        ((color >> 1) & 1) as f32 * 192.0 + base,
-        ((color >> 2) & 1) as f32 * 192.0 + base,
+        ((color & 1) as f32).mul_add(192.0, base),
+        (((color >> 1) & 1) as f32).mul_add(192.0, base),
+        (((color >> 2) & 1) as f32).mul_add(192.0, base),
     )
 }
 
@@ -157,7 +209,7 @@ fn get_256c(color: u8) -> Color {
         16..=231 => {
             let color = color - 16;
             (
-                ((color >> 0) & 7) as f32 * 8.0,
+                (color & 7) as f32 * 8.0,
                 ((color >> 3) & 7) as f32 * 8.0,
                 ((color >> 6) & 7) as f32 * 8.0,
             )
@@ -172,7 +224,7 @@ fn get_256c(color: u8) -> Color {
 fn filter(fg: bool, color: Color, recolor: &[Color; 3], new: &mut Vec<u8>) {
     new.push(if fg { 38 } else { 48 });
     new.push(2);
-    new.push((color.0 * recolor[0].0 + color.1 * recolor[0].1 + color.2 * recolor[0].2) as u8);
-    new.push((color.0 * recolor[1].0 + color.1 * recolor[1].1 + color.2 * recolor[1].2) as u8);
-    new.push((color.0 * recolor[2].0 + color.1 * recolor[2].1 + color.2 * recolor[2].2) as u8);
+    new.push(color.2.mul_add(recolor[0].2, color.0.mul_add(recolor[0].0, color.1 * recolor[0].1)) as u8);
+    new.push(color.2.mul_add(recolor[1].2, color.0.mul_add(recolor[1].0, color.1 * recolor[1].1)) as u8);
+    new.push(color.2.mul_add(recolor[2].2, color.0.mul_add(recolor[2].0, color.1 * recolor[2].1)) as u8);
 }
