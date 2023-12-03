@@ -1,0 +1,5 @@
+[submodule "clap"]
+	shallow = true
+	path = clap
+	url = git@github.com:funnsam/clap
+	branch = plain
