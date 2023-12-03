@@ -203,8 +203,11 @@ fn main() {
                         },
                         _ => new.push(esc),
                     }
+                    if new.len() != 0 {
+                        write!(stdout, "\x1b[{}m", new.iter().map(|a| a.to_string()).collect::<Vec<String>>().join(";")).unwrap();
+                        new.clear();
+                    }
                 }
-                write!(stdout, "\x1b[{}m", new.into_iter().map(|a| a.to_string()).collect::<Vec<String>>().join(";")).unwrap();
             } else {
                 write!(stdout, "\x1b{}{}", a, k as char).unwrap();
             }
@@ -218,11 +221,11 @@ fn main() {
 
 fn get_8c(color: u8, int: bool) -> Color {
     let color = color % 10;
-    let base = if int { 255.0 - 192.0 } else { 0.0 };
+    let base = if int { 255 - 208 } else { 0 };
     (
-        ((color & 1) as f32).mul_add(192.0, base),
-        (((color >> 1) & 1) as f32).mul_add(192.0, base),
-        (((color >> 2) & 1) as f32).mul_add(192.0, base),
+        ((color        & 1) * 208 + base) as f32,
+        (((color >> 1) & 1) * 208 + base) as f32,
+        (((color >> 2) & 1) * 208 + base) as f32,
     )
 }
 
