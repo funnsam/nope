@@ -128,9 +128,12 @@ fn main() {
 
     let recolor = args.kind.get_matrix();
 
-    let mut default_colors = Vec::with_capacity(10);
-    filter(true, get_8c(7, false), &recolor, &mut default_colors);
-    filter(false, get_8c(0, false), &recolor, &mut default_colors);
+    let mut default_fg = Vec::with_capacity(5);
+    let mut default_bg = Vec::with_capacity(5);
+    filter(true, get_8c(7, false), &recolor, &mut default_fg);
+    filter(false, get_8c(0, false), &recolor, &mut default_bg);
+
+    let default_colors = [default_fg.clone(), default_bg.clone()].concat();
     write!(stdout, "\x1b[{}m\x1b[K", default_colors.iter().map(|a| a.to_string()).collect::<Vec<String>>().join(";")).unwrap();
 
     while stdin.read_exact(&mut buf).is_ok() {
@@ -171,6 +174,8 @@ fn main() {
                             let color = get_8c(esc, true);
                             filter(false, color, &recolor, &mut new);
                         },
+                        39 => new.extend(default_fg.iter()),
+                        49 => new.extend(default_bg.iter()),
                         38 | 48 => match a.next() {
                             Some(Ok(2)) => {
                                 let r = a.next();
