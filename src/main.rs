@@ -224,14 +224,45 @@ fn main() {
     write!(stdout, "\x1b[0m\x1b[K").unwrap();
 }
 
+macro_rules! rgb {
+    ($rgb: expr) => {{
+        let a = $rgb;
+        (
+            ((a >> 16) % 256) as f32,
+            ((a >> 8) % 256) as f32,
+            (a % 256) as f32,
+        )
+    }};
+}
+
+const COLOR_16: [Color; 16] = [
+    rgb!(0x1e2127),
+    rgb!(0xe06c75),
+    rgb!(0x98c379),
+    rgb!(0xd19a66),
+    rgb!(0x61afef),
+    rgb!(0xc678dd),
+    rgb!(0x56b6c2),
+    rgb!(0xabb2bf),
+    rgb!(0x5c6370),
+    rgb!(0xe06c75),
+    rgb!(0x98c379),
+    rgb!(0xd19a66),
+    rgb!(0x61afef),
+    rgb!(0xc678dd),
+    rgb!(0x56b6c2),
+    rgb!(0xffffff),
+];
+
 fn get_8c(color: u8, int: bool) -> Color {
     let color = color % 10;
-    let base = if int { 255 - 208 } else { 0 };
+    /* let base = if int { 255 - 208 } else { 0 };
     (
         ((color        & 1) * 208 + base) as f32,
         (((color >> 1) & 1) * 208 + base) as f32,
         (((color >> 2) & 1) * 208 + base) as f32,
-    )
+    ) */
+    COLOR_16[color as usize + int as usize * 8]
 }
 
 fn get_256c(color: u8) -> Color {
