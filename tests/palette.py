@@ -1,3 +1,5 @@
+#!/bin/python3
+
 import colorsys
 
 RGB_COLORS = 32

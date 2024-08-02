@@ -44,23 +44,23 @@ struct Arg {
 
 #[derive(ValueEnum, Clone)]
 enum Kind {
-    // Trichromatic
+    /// Trichromatic
     Normal,
-    // Protanopia
+    /// Protanopia
     RedBlind,
-    // Protanomaly
+    /// Protanomaly
     RedWeak,
-    // Deuteranopia
+    /// Deuteranopia
     GreenBlind,
-    //Deuteranomaly
+    /// Deuteranomaly
     GreenWeak,
-    // Tritanopia
+    /// Tritanopia
     BlueBlind,
-    // Tritanomaly
+    /// Tritanomaly
     BlueWeak,
-    // Achromatopsia
+    /// Achromatopsia
     ColorBlind,
-    // Achromatomaly
+    /// Achromatomaly
     ColorWeak,
 }
 
@@ -130,8 +130,8 @@ fn main() {
 
     let mut default_fg = Vec::with_capacity(5);
     let mut default_bg = Vec::with_capacity(5);
-    filter(true, get_8c(7, false), &recolor, &mut default_fg);
-    filter(false, get_8c(0, false), &recolor, &mut default_bg);
+    filter(true, FG_COLOR, &recolor, &mut default_fg);
+    filter(false, BG_COLOR, &recolor, &mut default_bg);
 
     let default_colors = [default_fg.clone(), default_bg.clone()].concat();
     write!(stdout, "\x1b[{}m\x1b[K", default_colors.iter().map(|a| a.to_string()).collect::<Vec<String>>().join(";")).unwrap();
@@ -235,33 +235,30 @@ macro_rules! rgb {
     }};
 }
 
+const FG_COLOR: Color = rgb!(0xcad3f5);
+const BG_COLOR: Color = rgb!(0x24273a);
+
 const COLOR_16: [Color; 16] = [
-    rgb!(0x1e2127),
-    rgb!(0xe06c75),
-    rgb!(0x98c379),
-    rgb!(0xd19a66),
-    rgb!(0x61afef),
-    rgb!(0xc678dd),
-    rgb!(0x56b6c2),
-    rgb!(0xabb2bf),
-    rgb!(0x5c6370),
-    rgb!(0xe06c75),
-    rgb!(0x98c379),
-    rgb!(0xd19a66),
-    rgb!(0x61afef),
-    rgb!(0xc678dd),
-    rgb!(0x56b6c2),
-    rgb!(0xffffff),
+    rgb!(0x494d64),
+    rgb!(0xed8796),
+    rgb!(0xa6da95),
+    rgb!(0xeed49f),
+    rgb!(0x8aadf4),
+    rgb!(0xf5bde6),
+    rgb!(0x8bd5ca),
+    rgb!(0xa5adcb),
+    rgb!(0x5b6078),
+    rgb!(0xed8796),
+    rgb!(0xa6da95),
+    rgb!(0xeed49f),
+    rgb!(0x8aadf4),
+    rgb!(0xf5bde6),
+    rgb!(0x8bd5ca),
+    rgb!(0xb8c0e0),
 ];
 
 fn get_8c(color: u8, int: bool) -> Color {
     let color = color % 10;
-    /* let base = if int { 255 - 208 } else { 0 };
-    (
-        ((color        & 1) * 208 + base) as f32,
-        (((color >> 1) & 1) * 208 + base) as f32,
-        (((color >> 2) & 1) * 208 + base) as f32,
-    ) */
     COLOR_16[color as usize + int as usize * 8]
 }
 
